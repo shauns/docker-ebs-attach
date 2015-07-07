@@ -44,8 +44,9 @@ print "Connected to EC2 API, attaching volume"
 instance = requests.get("http://169.254.169.254/latest/meta-data/instance-id").content
 
 existing_vols = conn.get_all_volumes(filters={'tag:Name': args.volume_name})
-if len(existing_vols) > 0:
+if len(existing_vols) > 1:
     print "Multiple volumes found with name {}".format(args.volume_name)
+    print ", ".join(vol.id for vol in existing_vols)
     sys.exit(2)
 elif len(existing_vols) == 1:
     vol = existing_vols[0]
