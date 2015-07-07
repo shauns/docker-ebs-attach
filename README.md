@@ -6,7 +6,7 @@ Docker container that attaches an EBS volume to the local ec2 instance. The volu
 Usage:
 
 ```
-docker run -it --rm leg100/ebs-attach \
+docker run -it --rm freeformers/docker-ebs-attach \
 --volume-name MyVolumeName \
 --device /dev/xvdf \
 --region eu-west-1
