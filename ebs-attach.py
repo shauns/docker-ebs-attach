@@ -12,8 +12,9 @@ import requests
 
 # on close, detach ebs
 parser = argparse.ArgumentParser(description='Attach and mount EBS volume to local instance')
-parser.add_argument('--volumeid', metavar='<VOLUME_ID>', default=os.environ.get('VOLUME_ID'),
-                    help='Volume ID of EBS volume to attach')
+parser.add_argument('--volume-name', metavar='<VOLUME_NAME>',
+                    default=os.environ.get('VOLUME_NAME'),
+                    help='Value of the `Name` tag of the EBS volume to attach')
 parser.add_argument('--device', metavar='<DEVICE>', default=os.environ.get('DEVICE'),
                     help='Device to expose volume on')
 parser.add_argument('--region', metavar='<REGION>', default=os.environ.get('REGION'),
@@ -39,21 +40,26 @@ while True:
     else:
         break
 
+print "Connected to EC2 API, attaching volume"
 instance = requests.get("http://169.254.169.254/latest/meta-data/instance-id").content
 
-existing_vols = conn.get_all_volumes([args.volumeid])
+existing_vols = conn.get_all_volumes(filters={'tag:Name': args.volume_name})
 if len(existing_vols) > 0:
+    print "Multiple volumes found with name {}".format(args.volume_name)
+    sys.exit(2)
+elif len(existing_vols) == 1:
     vol = existing_vols[0]
+    volume_id = vol.id
 
     if vol.attach_data.instance_id == instance:
-        print "Volume {} already attached to {}".format(args.volumeid, instance)
+        print "Volume {} already attached to {}".format(volume_id, instance)
         sys.stdout.flush()
     else:
-        conn.attach_volume(args.volumeid, instance, args.device) or sys.exit(1)
-        print "Attached volume {} to device {} on instance {}".format(args.volumeid, args.device, instance)
+        conn.attach_volume(volume_id, instance, args.device) or sys.exit(1)
+        print "Attached volume {} to device {} on instance {}".format(volume_id, args.device, instance)
         sys.stdout.flush()
 else:
-    print "Cannot find volume {}".format(args.volumeid)
+    print "Cannot find volume with name {}".format(args.volume_name)
     sys.exit(2)
 
 def detach_func(volume, instance, device):
@@ -74,11 +80,11 @@ def detach_func(volume, instance, device):
                     sys.exit(3)
                 else:
                     time.sleep(1)
-           else:
+            else:
                 sys.exit(0)
     return handler
 
-detach = detach_func(args.volumeid, instance, args.device)
+detach = detach_func(volume_id, instance, args.device)
 signal.signal(signal.SIGTERM, detach)
 signal.signal(signal.SIGINT, detach)
 

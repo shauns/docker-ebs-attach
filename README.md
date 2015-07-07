@@ -1,13 +1,13 @@
 docker-ebs-attach
 ==============
 
-Docker container that attaches an EBS volume to the local ec2 instance.
+Docker container that attaches an EBS volume to the local ec2 instance. The volume is identified by its Name tag.
 
-Usage: 
+Usage:
 
 ```
 docker run -it --rm leg100/ebs-attach \
---volumeid vol-123123 \
+--volume-name MyVolumeName \
 --device /dev/xvdf \
 --region eu-west-1
 ```
